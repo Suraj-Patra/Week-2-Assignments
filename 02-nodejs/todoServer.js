@@ -39,6 +39,7 @@
 
   Testing the server - run `npm run test-todoServer` command in terminal
  */
+const fs = require('fs');
 const express = require('express');
 const bodyParser = require('body-parser');
 
@@ -46,4 +47,71 @@ const app = express();
 
 app.use(bodyParser.json());
 
+
+// Getting data from the file :
+let Todos = require('./files/TODO_DATA.json');
+// let Todos = [];
+const { log } = require('console');
+
+
+// Routes :
+
+app
+  .route('/todos')
+  .get((req, res) => {
+    res.status(200).json(Todos);
+  })
+  .post((req, res) => {
+    let body = req.body;
+    if(!Object.keys(body).length) return res.status(400).json({msg: "Need data"});
+    body = {...body, id: Todos.length+1};
+    Todos.push(body);
+    fs.writeFile('./files/TODO_DATA.json', JSON.stringify(Todos), (err, data) => {
+      console.log('Error :', err);
+    })
+
+    res.status(201).json({id: Todos.length});
+  })
+
+
+app
+  .route('/todos/:id')
+  .get((req, res) => {
+    const id = +req.params.id;
+    if(!id) return res.status(404).json({msg: "Not Found!"});
+    
+    const todo = Todos.find(todo => todo.id===id);
+    return res.status(200).json(todo);
+  })
+  .put((req, res) => {
+    const body = req.body;
+    const id = +req.params.id;
+    if(!id) return res.status(404).json({msg: "Not Found!"});
+    if(!Object.keys(body).length) return res.status(404).json({msg: "Need data"});
+
+    Todos = Todos.map(todo => {
+      if(todo.id===id) todo = {...todo, ...body};
+      return todo;
+    })
+    fs.writeFile('./files/TODO_DATA.json', JSON.stringify(Todos), (err, data) => {
+      console.log('Error :', err);
+    })
+
+    return res.status(200).json({msg: "Updated successfully!"});
+  })
+  .delete((req, res) => {
+    const id = +req.params.id;
+    if(!id) return res.status(404).json({msg: "Not Found!"});
+
+    const index = Todos.findIndex(todo => todo.id===id);
+    Todos.splice(index, 1);
+    fs.writeFile('./files/TODO_DATA.json', JSON.stringify(Todos), (err, data) => {
+      console.log('Error :', err);
+    })
+
+    res.status(200).json({msg: "Deleted Successfully!"});
+  })
+
+
+app.listen(8000, () => console.log(`Server is running on port: 8000`));
 module.exports = app;
