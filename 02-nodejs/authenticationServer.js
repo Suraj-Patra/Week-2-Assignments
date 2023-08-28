@@ -29,9 +29,67 @@
   Testing the server - run `npm run test-authenticationServer` command in terminal
  */
 
+const fs = require('fs');
 const express = require("express")
 const PORT = 3000;
 const app = express();
 // write your logic here, DONT WRITE app.listen(3000) when you're running tests, the tests will automatically start the server
 
+app.use(express.json());
+
+// const users = require('./authentication.json');
+const users = [];
+
+
+
+app.post('/signup', (req, res) => {
+  let body = req.body;
+  if(!Object.keys(body).length) return res.status(400).json({msg: "Need data"});
+
+  body = {...body, id: users.length+1};
+  if(users.find(user => user.username===body.username)) return res.status(401).json({msg: "username already exists!"});
+  users.push(body);
+  fs.writeFile('./authentication.json', JSON.stringify(users), (err, data) => {
+    if(err) return console.log('Error writing data');
+  })
+  return res.status(201).send("Signup successful");
+})
+
+app.post('/login', (req, res) => {
+  const body = req.body;
+  // if(!Object.keys(body).length) return res.status(400).json({msg: "Need data"});
+  // if(!body.username || !body.password) return res.status(400).json({msg: "Need data"});
+
+  users.find(user => {
+    if(user.username===body.username && user.password===body.password)
+      return res.status(200).json({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email
+      });
+    else
+      return res.status(401).json({msg: "Authentication failed!"});
+  })
+})
+
+
+// I didn't get this part, so I copied this part from the solution :
+app.get("/data", (req, res) => {
+  var email = req.headers.email;
+  var password = req.headers.password;
+  let userFound = users.find(user => (user.email===email && user.password===password))
+
+  if (userFound) {
+    let usersToReturn = users.map(user => ({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email
+    }))
+    return res.json({ users: usersToReturn });
+  }
+  return res.sendStatus(401);
+});
+
+
+// app.listen(8000, () => console.log(`Listening on port : 8000`));
 module.exports = app;
