@@ -22,4 +22,30 @@ const path = require('path');
 const app = express();
 
 
+
+app.get('/files', (req, res) => {
+  const filePath = path.join(__dirname, 'files');
+  fs.readdir(filePath, (err, files) => {
+    if(err) return res.status(500).send('File not found');
+    return res.status(200).json(files);
+  })
+})
+
+app.get('/file/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(__dirname, 'files', filename);
+  fs.readFile(filePath, 'utf-8', (err, data) => {
+    if(err) return res.status(404).send('File not found');
+    return res.status(200).send(data);
+  })
+})
+
+
+// Middleware to handle any unknown route :
+app.use((req, res, next) => {
+  return res.status(404).send("Route not found");
+})
+
+
+app.listen(8000, () => console.log(`Listening on port: 8000`));
 module.exports = app;
